@@ -14,15 +14,16 @@ import android.view.View;
 
 public class StatusProgress extends View {
 
+
     public interface StatusProgressBarListener {
-        void onProgressChange(int current, int max);
+        void onProgressChange(StatusProgress progressBar, int current, int max);
     }
 
     private int mMaxProgress = 100;
     private int mCurrentProgress = 0;
 
 
-    private int mDefaultBarHeight = 4;
+    private int mDefaultBarHeight = 16;
     private int mDefaultBarWidth = -1;
 
     private int mAttachColor;
@@ -52,8 +53,8 @@ public class StatusProgress extends View {
 
     public StatusProgress(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        mAttachColor = Color.rgb(66, 145, 241);
-        mUnAttachColor = Color.rgb(66, 145, 241);
+        mAttachColor = Color.rgb(66, 182, 63);
+        mUnAttachColor = Color.rgb(218, 29, 30);
         initPaint();
     }
 
@@ -68,13 +69,31 @@ public class StatusProgress extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(mDefaultBarWidth, (int) dp2px(mDefaultBarHeight));
+        setMeasuredDimension(measure(widthMeasureSpec, true), measure(heightMeasureSpec, false));
     }
+
+    private int measure(int spec, boolean isWidth) {
+        int result;
+        int mode = MeasureSpec.getMode(spec);
+        int size = MeasureSpec.getSize(spec);
+        int padding = isWidth ? getPaddingLeft() + getPaddingRight() : getPaddingTop() + getPaddingBottom();
+
+        if (mode == MeasureSpec.EXACTLY) {
+            result = size;
+        } else {
+            if (isWidth) {
+                result = size + padding;
+            } else {
+                result = mDefaultBarHeight + padding;
+            }
+        }
+        return result;
+    }
+
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
         mAttachRectF.left = getPaddingLeft();
         mAttachRectF.top = 0;
         mAttachRectF.right = (getWidth() - getPaddingLeft() - getPaddingRight()) / (getMaxProgress() * 1.0f) * getCurrentProgress() + getPaddingLeft();
@@ -82,12 +101,11 @@ public class StatusProgress extends View {
 
         mUnAttachRectF.left = mAttachRectF.right;
         mUnAttachRectF.right = getWidth() - getPaddingRight();
-        mUnAttachRectF.top =0;
+        mUnAttachRectF.top = 0;
         mUnAttachRectF.bottom = getHeight() / 2.0f + mDefaultBarHeight / 2.0f;
 
         canvas.drawRect(mAttachRectF, mAttachPaint);
         canvas.drawRect(mUnAttachRectF, mUnAttachPaint);
-
     }
 
 
@@ -113,15 +131,20 @@ public class StatusProgress extends View {
         }
 
         if (mStatusProgressBarListener != null) {
-            mStatusProgressBarListener.onProgressChange(getCurrentProgress(), getMaxProgress());
+            mStatusProgressBarListener.onProgressChange(this, getCurrentProgress(), getMaxProgress());
         }
     }
 
     public void setCurrentProgress(int currentProgress) {
-        if (currentProgress < getMaxProgress() && currentProgress > 0) {
+        if (currentProgress <= getMaxProgress() && currentProgress > 0) {
             this.mCurrentProgress = currentProgress;
             invalidate();
         }
+        if (currentProgress > getMaxProgress()) {
+            this.mCurrentProgress = getMaxProgress();
+            invalidate();
+        }
+
     }
 
     public int getProgressHeight() {
@@ -158,6 +181,7 @@ public class StatusProgress extends View {
         this.mUnAttachColor = unAttachColor;
         mUnAttachPaint.setColor(unAttachColor);
         invalidate();
+
     }
 
     public float dp2px(float dp) {
@@ -169,4 +193,15 @@ public class StatusProgress extends View {
         final float scale = getResources().getDisplayMetrics().scaledDensity;
         return sp * scale;
     }
+
+
+    public void showProgressBar() {
+        setVisibility(View.VISIBLE);
+    }
+
+
+    public void closeProgressBar() {
+        setVisibility(View.GONE);
+    }
+
 }
